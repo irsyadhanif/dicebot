@@ -1,0 +1,12 @@
+[package]
+name = "dicebot"
+version = "0.1.0"
+authors = ["Irsyad Hanif <irsyad.hanif@uky.edu>"]
+
+[dependencies]
+typemap = "0.3"
+rand = "0.3"
+
+[dependencies.serenity]
+git = "https://github.com/zeyla/serenity.git"
+features = ["framework"]
