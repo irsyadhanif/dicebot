@@ -36,13 +36,7 @@ fn main() {
         println!("{} is connected!", ready.user.name);
     });
 
-    // Commands are equivalent to:
-    // "~about"
-    // "~emoji cat"
-    // "~emoji dog"
-    // "~multiply"
-    // "~ping"
-    // "~some long command"
+
     client.with_framework(|f| f
         // Configures the client, allowing for options to mutate how the
         // framework functions.
@@ -113,26 +107,6 @@ fn owner_check(_: &mut Context, msg: &Message) -> bool {
     msg.author.id == 117810256209248264
 }
 
-// Using the `command!` macro, commands can be created with a certain type of
-// "dynamic" type checking. This is a method of requiring that the arguments
-// given match the required type, and maps those arguments to the specified
-// bindings.
-//
-// For example, the following will be correctly parsed by the macro:
-//
-// `~multiply 3.7 4.3`
-//
-// However, the following will not, as the second argument can not be an f64:
-//
-// `~multiply 3.7 four`
-//
-// Since the argument can't be converted, the command returns early.
-//
-// Additionally, if not enough arguments are given (e.g. `~multiply 3`), then
-// the command will return early. If additional arguments are provided, they
-// will be ignored.
-//
-// Argument type overloading is currently not supported.
 command!(multiply(_ctx, msg, args, first: f64, second: f64) {
     let res = first * second;
 
