@@ -5,7 +5,8 @@ extern crate rand;
 
 use serenity::client::Context;
 use serenity::Client;
-use serenity::model::{Message, permissions};
+use serenity::client::CACHE;
+use serenity::model::{Message, permissions, Game};
 use serenity::ext::framework::help_commands;
 use std::collections::HashMap;
 use std::fmt::Write;
@@ -14,6 +15,7 @@ use rand::Rng;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::slice;
 
 struct CommandCounter;
 
@@ -118,22 +120,32 @@ fn main() {
                 .exec_str(":cat:")
                  // Allow only administrators to call this:
                 .required_permissions(permissions::ADMINISTRATOR))
+
             .command("dog", |c| c
                 .desc("Sends an emoji with a dog.")
                 .bucket("emoji")
                 .exec_str(":dog:")))
+
         .command("multiply", |c| c
             .known_as("*") // Lets us call ~* instead of ~multiply
             .exec(multiply))
+
         .command("ping", |c| c
             .check(owner_check)
             .exec_str("Pong!"))
+
         .command("some long command", |c| c.exec(some_long_command))
 
         .command("roll", |c| c
             .exec(roll)
+            .known_as("r")
             .desc("Roll a dx dice y times.  Usage: !roll x y"))
-        .command("config", |c| c.exec(config)));
+        .command("config", |c| c
+            .desc("Set game for dice rolls.")
+            .exec(config))
+        .command("playing", |c| c
+            .exec(playing)
+            .desc("Print current game")));
 
     if let Err(why) = client.start() {
         println!("Client error: {:?}", why);
@@ -220,7 +232,16 @@ command!(roll(_ctx, msg, args, first: i64, second: i64) {
 });
 
 command!(config(_ctx, msg, args) {
-    if let Err(why) = msg.channel_id.say(&format!("Configured for {:?}", args)) {
+    let game_name = args.join(" ");
+    _ctx.set_game(Game::playing(& game_name));
+    if let Err(why) = msg.channel_id.say(&format!("Configured for {:?}", game_name)) {
         println!("Error sending message: {:?}", why);
+    }
+});
+
+command!(playing(_ctx, msg, args) {
+    let mut name = "";
+    if let Err(why) = msg.channel_id.say(&format!("I am playing {}", name)) {
+        println!("Error sending message {:?}", why);
     }
 });

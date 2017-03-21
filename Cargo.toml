@@ -9,4 +9,4 @@ rand = "0.3"
 
 [dependencies.serenity]
 git = "https://github.com/zeyla/serenity.git"
-features = ["framework"]
+features = ["framework", "cache"]
