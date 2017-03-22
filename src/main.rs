@@ -19,6 +19,21 @@ impl Key for GameName {
     type Value = String;
 }
 
+//---------------------------
+//---------GAMES-------------
+//---------------------------
+fn shadowrun() {
+
+}
+
+fn wod() {
+
+}
+
+
+//----------------------------
+//----------MAIN--------------
+//----------------------------
 fn main() {
     // read private key from key.txt
     let path = Path::new("src/key.txt");
@@ -95,7 +110,11 @@ fn main() {
             .exec(config))
         .command("playing", |c| c
             .exec(playing)
-            .desc("Print current game")));
+            .desc("Print current game"))
+        .command("rollgame", |c| c
+            .desc("Roll dice for set game (use !config to set game)")
+            .exec(rollgame)
+            .batch_known_as(vec!["rg", "rollg", "rgame"])));
 
     if let Err(why) = client.start() {
         println!("Client error: {:?}", why);
@@ -104,28 +123,43 @@ fn main() {
 
 
 
+
+
+//----------------------------
+//-------MISC FUNCTIONS-------
+//----------------------------
+
 // A function which acts as a "check", to determine whether to call a command.
 //
 // In this case, this command checks to ensure you are the owner of the message
 // in order for the command to be executed. If the check fails, the command is
 // not called.
+
 fn owner_check(_: &mut Context, msg: &Message) -> bool {
     // Replace 7 with your ID
     msg.author.id == 117810256209248264
 }
 
-
-// rolls a <x> sided die <y> times.
-command!(roll(_ctx, msg, args, first: i64, second: i64) {
+fn roll_dice(d: i64, times: i64) -> Vec<i64> {
     let mut rolls = Vec::new();
 
-    for x in 0..second {
-        let result = rand::thread_rng().gen_range(1, first + 1);
+    for x in 0..times {
+        let result = rand::thread_rng().gen_range(1, d + 1);
         rolls.push(result);
     }
 
+    return rolls;
+}
 
 
+//----------------------------
+//---------COMMANDS-----------
+//----------------------------
+
+// rolls a <x> sided die <y> times.
+command!(roll(_ctx, msg, args, first: i64, second: i64) {
+
+    let rolls = roll_dice(first, second);
     if let Err(why) = msg.channel_id.say(&format!("Rolls: {:?}", rolls)) {
         println!("Error sending message: {:?}", why);
     }
@@ -143,11 +177,17 @@ command!(config(_ctx, msg, args) {
     }
 });
 
-// debug command, prints out current game playing (non-functional)
+// debug command, prints out current game playing
 command!(playing(_ctx, msg, args) {
     let mut data = _ctx.data.lock().unwrap();
     let name = data.get_mut::<GameName>().unwrap();
     if let Err(why) = msg.channel_id.say(&format!("I am playing {}", name)) {
         println!("Error sending message {:?}", why);
     }
+});
+
+command!(rollgame(_ctx, msg, args, first: i64) {
+    let mut data = _ctx.data.lock().unwrap();
+    let name = data.get_mut::<GameName>().unwrap();
+
 });
