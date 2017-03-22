@@ -7,6 +7,7 @@ use serenity::client::Context;
 use serenity::Client;
 use serenity::model::{Message, Game};
 use serenity::ext::framework::help_commands;
+use serenity::utils::MessageBuilder;
 use rand::Rng;
 use std::fs::File;
 use std::io::prelude::*;
@@ -22,12 +23,48 @@ impl Key for GameName {
 //---------------------------
 //---------GAMES-------------
 //---------------------------
-fn shadowrun() {
-
+fn shadowrun(times: i64, msg: &Message) {
+    let mut rolls = roll_dice(6, times);
+    msg.channel_id.say(&format!("Rolling for shadowrun: {:?}", rolls));
+    let mut ones = 0;
+    let mut hits = 0;
+    for result in rolls {
+        match result {
+            1     => ones += 1,
+            5 | 6 => hits += 1,
+            _     => (),
+        }
+    }
+    //msg.channel_id.say(&format!("Ones: {}", ones));
+    //msg.channel_id.say(&format!("Hits: {}", hits));
+    let response = MessageBuilder::new()
+        .push(&format!("Ones: {}\n", ones))
+        .push(&format!("Hits: {}", hits));
+    if let Err(why) = msg.channel_id.say(&response.build()) {
+        println!("Error sending message {:?}", why);
+    }
 }
 
-fn wod() {
-
+fn wod(times: i64, msg: &Message) {
+    let mut rolls = roll_dice(10, times);
+    msg.channel_id.say(&format!("Rolling for World of Darkness: {:?}", rolls));
+    let mut ones = 0;
+    let mut hits = 0;
+    for result in rolls {
+        match result {
+            1     => ones += 1,
+            8 | 9 | 10 => hits += 1,
+            _     => (),
+        }
+    }
+    //msg.channel_id.say(&format!("Ones: {}", ones));
+    //msg.channel_id.say(&format!("Hits: {}", hits));
+    let response = MessageBuilder::new()
+        .push(&format!("Ones: {}\n", ones))
+        .push(&format!("Hits: {}", hits));
+    if let Err(why) = msg.channel_id.say(&response.build()) {
+        println!("Error sending message {:?}", why);
+    }
 }
 
 
@@ -189,5 +226,12 @@ command!(playing(_ctx, msg, args) {
 command!(rollgame(_ctx, msg, args, first: i64) {
     let mut data = _ctx.data.lock().unwrap();
     let name = data.get_mut::<GameName>().unwrap();
+    if (name == "shadowrun") {
+        shadowrun(first, msg);
+    } else if (name == "wod") {
+        wod(first, msg);
+    } else {
+        msg.channel_id.say(&format!("No game configured or invalid name"));
+    }
 
 });
