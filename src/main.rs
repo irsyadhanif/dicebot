@@ -11,6 +11,13 @@ use rand::Rng;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use typemap::Key;
+
+struct GameName;
+
+impl Key for GameName {
+    type Value = String;
+}
 
 fn main() {
     // read private key from key.txt
@@ -31,7 +38,10 @@ fn main() {
 
     let mut client = Client::login_bot(& key);
 
-
+    {
+        let mut data = client.data.lock().unwrap();
+        data.insert::<GameName>(String::from("default"));
+    }
     client.on_ready(|_ctx, ready| {
         println!("{} is connected!", ready.user.name);
     });
@@ -71,18 +81,15 @@ fn main() {
                 Err(why) => println!("Command '{}' returned error {:?}", command_name, why),
             }
         })
-        .command("about", |c| c.exec_str("A test bot"))
+        .command("about", |c| c.exec_str("A dice rolling bot"))
         .command("help", |c| c.exec_help(help_commands::plain))
-        .command("multiply", |c| c
-            .known_as("*") // Lets us call ~* instead of ~multiply
-            .exec(multiply))
         .command("ping", |c| c
             .check(owner_check)
             .exec_str("Pong!"))
         .command("roll", |c| c
             .exec(roll)
             .known_as("r")
-            .desc("Roll a dx dice y times.  Usage: !roll x y"))
+            .desc("Roll an n-sided dice x times.  Usage: !roll n x"))
         .command("config", |c| c
             .desc("Set game for dice rolls.")
             .exec(config))
@@ -107,13 +114,6 @@ fn owner_check(_: &mut Context, msg: &Message) -> bool {
     msg.author.id == 117810256209248264
 }
 
-command!(multiply(_ctx, msg, args, first: f64, second: f64) {
-    let res = first * second;
-
-    if let Err(why) = msg.channel_id.say(&res.to_string()) {
-        println!("Err sending product of {} and {}: {:?}", first, second, why);
-    }
-});
 
 // rolls a <x> sided die <y> times.
 command!(roll(_ctx, msg, args, first: i64, second: i64) {
@@ -125,6 +125,7 @@ command!(roll(_ctx, msg, args, first: i64, second: i64) {
     }
 
 
+
     if let Err(why) = msg.channel_id.say(&format!("Rolls: {:?}", rolls)) {
         println!("Error sending message: {:?}", why);
     }
@@ -133,15 +134,19 @@ command!(roll(_ctx, msg, args, first: i64, second: i64) {
 // sets game name.  will be used to configure dice rules.
 command!(config(_ctx, msg, args) {
     let game_name = args.join(" ");
+    let game_name2 = args.join(" ");
     _ctx.set_game(Game::playing(& game_name));
-    if let Err(why) = msg.channel_id.say(&format!("Configured for {:?}", game_name)) {
+    let mut data = _ctx.data.lock().unwrap();
+    data.insert::<GameName>(game_name);
+    if let Err(why) = msg.channel_id.say(&format!("Configured for {:?}", game_name2)) {
         println!("Error sending message: {:?}", why);
     }
 });
 
 // debug command, prints out current game playing (non-functional)
 command!(playing(_ctx, msg, args) {
-    let mut name = "";
+    let mut data = _ctx.data.lock().unwrap();
+    let name = data.get_mut::<GameName>().unwrap();
     if let Err(why) = msg.channel_id.say(&format!("I am playing {}", name)) {
         println!("Error sending message {:?}", why);
     }
