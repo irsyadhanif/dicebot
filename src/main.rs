@@ -15,17 +15,21 @@ use std::path::Path;
 use typemap::Key;
 
 struct GameName;
+struct DM;
 
 impl Key for GameName {
     type Value = String;
 }
 
+impl Key for DM {
+    type Value = String;
+}
 //---------------------------
 //---------GAMES-------------
 //---------------------------
 fn shadowrun(times: i64, msg: &Message) {
     let mut rolls = roll_dice(6, times);
-    msg.channel_id.say(&format!("Rolling for shadowrun: {:?}", rolls));
+    msg.channel_id.say(&format!("Rolling for Shadowrun: {:?}", rolls));
     let mut ones = 0;
     let mut hits = 0;
     for result in rolls {
@@ -50,12 +54,18 @@ fn wod(times: i64, msg: &Message) {
     msg.channel_id.say(&format!("Rolling for World of Darkness: {:?}", rolls));
     let mut ones = 0;
     let mut hits = 0;
+    let mut tens = 0;
     for result in rolls {
         match result {
             1     => ones += 1,
-            8 | 9 | 10 => hits += 1,
+            8 | 9 => hits += 1,
+            10    => { hits +=1; tens += 1 }
             _     => (),
         }
+    }
+    if (tens > 0) {
+        msg.channel_id.say(&format!("Roll again!"));
+        wod(tens, & msg);
     }
     //msg.channel_id.say(&format!("Ones: {}", ones));
     //msg.channel_id.say(&format!("Hits: {}", hits));
@@ -93,6 +103,7 @@ fn main() {
     {
         let mut data = client.data.lock().unwrap();
         data.insert::<GameName>(String::from("default"));
+        data.insert::<DM>(String::from("None"));
     }
     client.on_ready(|_ctx, ready| {
         println!("{} is connected!", ready.user.name);
@@ -151,7 +162,17 @@ fn main() {
         .command("rollgame", |c| c
             .desc("Roll dice for set game (use !config to set game)")
             .exec(rollgame)
-            .batch_known_as(vec!["rg", "rollg", "rgame"])));
+            .batch_known_as(vec!["rg", "rollg", "rgame"]))
+        .command("dmroll", |c| c
+            .exec(dmroll)
+            .known_as("dmr")
+            .desc("Private roll that only you and the DM see.  Requires a set DM."))
+        .command("setdm", |c| c
+            .exec(setdm)
+            .desc("Sets the DM.  Allows use of !dmroll"))
+        .command("whoisdm", |c| c
+            .exec(whoisdm)
+            .desc("Check who the DM is.")));
 
     if let Err(why) = client.start() {
         println!("Client error: {:?}", why);
@@ -223,6 +244,7 @@ command!(playing(_ctx, msg, args) {
     }
 });
 
+// rolls based on game rules.
 command!(rollgame(_ctx, msg, args, first: i64) {
     let mut data = _ctx.data.lock().unwrap();
     let name = data.get_mut::<GameName>().unwrap();
@@ -234,4 +256,25 @@ command!(rollgame(_ctx, msg, args, first: i64) {
         msg.channel_id.say(&format!("No game configured or invalid name"));
     }
 
+});
+
+command!(dmroll(_ctx, msg, args, first: i64, second: i64) {
+
+});
+
+command!(setdm(_ctx, msg, args) {
+    let DM_name = args.join(" ");
+    let mut data = _ctx.data.lock().unwrap();
+    data.insert::<DM>(DM_name);
+    if let Err(why) = msg.channel_id.say(&format!("DM set.")) {
+        println!("Error sending message {:?}", why);
+    }
+});
+
+command!(whoisdm(_ctx, msg, args) {
+    let mut data = _ctx.data.lock().unwrap();
+    let name = data.get_mut::<DM>().unwrap();
+    if let Err(why) = msg.channel_id.say(&format!("The DM is {:?}.", name)) {
+        println!("Error sending message {:?}", why);
+    }
 });
