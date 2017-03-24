@@ -163,7 +163,7 @@ fn main() {
         .command("roll", |c| c
             .exec(roll)
             .known_as("r")
-            .desc("Roll an n-sided dice x times.  Usage: !roll <x> d <n>"))
+            .desc("Roll an n-sided dice x times.  Usage: !roll <x>d<n>"))
         .command("config", |c| c
             .desc("Set game for dice rolls.")
             .exec(config))
