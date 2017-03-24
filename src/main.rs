@@ -160,7 +160,7 @@ fn main() {
         .command("roll", |c| c
             .exec(roll)
             .known_as("r")
-            .desc("Roll an n-sided dice x times.  Usage: !roll n x"))
+            .desc("Roll an n-sided dice x times.  Usage: !roll <x> d <n>"))
         .command("config", |c| c
             .desc("Set game for dice rolls.")
             .exec(config))
@@ -223,9 +223,9 @@ fn roll_dice(d: i64, times: i64) -> Vec<i64> {
 //----------------------------
 
 // rolls a <x> sided die <y> times.
-command!(roll(_ctx, msg, args, first: i64, second: i64) {
+command!(roll(_ctx, msg, args, first: i64, second: String, third:i64) {
 
-    let rolls = roll_dice(first, second);
+    let rolls = roll_dice(third, first);
     if let Err(why) = msg.channel_id.say(&format!("Rolls: {:?}", rolls)) {
         println!("Error sending message: {:?}", why);
     }
@@ -277,7 +277,7 @@ command!(setdm(_ctx, msg, args) {
     };
     let mut data = _ctx.data.lock().unwrap();
     data.insert::<DM>(dm_user);
-    if let Err(why) = msg.channel_id.say(&format!("DM set.")) {
+    if let Err(why) = msg.channel_id.say(&format!("Dungeon Master set.")) {
         println!("Error sending message {:?}", why);
     }
 });
@@ -285,7 +285,7 @@ command!(setdm(_ctx, msg, args) {
 command!(whoisdm(_ctx, msg, args) {
     let mut data = _ctx.data.lock().unwrap();
     let name = data.get_mut::<DM>().unwrap();
-    if let Err(why) = msg.channel_id.say(&format!("The DM is {:?}.", name.name)) {
+    if let Err(why) = msg.channel_id.say(&format!("The Dungeon Master is {:?}.", name.name)) {
         println!("Error sending message {:?}", why);
     }
 });
