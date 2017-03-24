@@ -12,6 +12,7 @@ use rand::Rng;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::option;
 use typemap::Key;
 
 struct GameName;
@@ -22,7 +23,7 @@ impl Key for GameName {
 }
 
 impl Key for DM {
-    type Value = String;
+    type Value = serenity::model::User;
 }
 //---------------------------
 //---------GAMES-------------
@@ -103,7 +104,14 @@ fn main() {
     {
         let mut data = client.data.lock().unwrap();
         data.insert::<GameName>(String::from("default"));
-        data.insert::<DM>(String::from("None"));
+        data.insert::<DM>(serenity::model::User{
+            bot: false,
+            id: serenity::model::UserId::from(0),
+            discriminator: String::from(""),
+            name: String::from(""),
+            avatar: None::<String>,
+
+        });
     }
     client.on_ready(|_ctx, ready| {
         println!("{} is connected!", ready.user.name);
@@ -167,9 +175,9 @@ fn main() {
             .exec(dmroll)
             .known_as("dmr")
             .desc("Private roll that only you and the DM see.  Requires a set DM."))
-        .command("setdm", |c| c
+        .command("givemedm", |c| c
             .exec(setdm)
-            .desc("Sets the DM.  Allows use of !dmroll"))
+            .desc("Sets the DM as yourself.  Allows use of !dmroll"))
         .command("whoisdm", |c| c
             .exec(whoisdm)
             .desc("Check who the DM is.")));
@@ -263,9 +271,12 @@ command!(dmroll(_ctx, msg, args, first: i64, second: i64) {
 });
 
 command!(setdm(_ctx, msg, args) {
-    let DM_name = args.join(" ");
+    let dm_user = match serenity::model::User::get(msg.author.id) {
+        Ok(T) => T,
+        Err(why) => panic!("Something happened: {:?}", why),
+    };
     let mut data = _ctx.data.lock().unwrap();
-    data.insert::<DM>(DM_name);
+    data.insert::<DM>(dm_user);
     if let Err(why) = msg.channel_id.say(&format!("DM set.")) {
         println!("Error sending message {:?}", why);
     }
@@ -274,7 +285,7 @@ command!(setdm(_ctx, msg, args) {
 command!(whoisdm(_ctx, msg, args) {
     let mut data = _ctx.data.lock().unwrap();
     let name = data.get_mut::<DM>().unwrap();
-    if let Err(why) = msg.channel_id.say(&format!("The DM is {:?}.", name)) {
+    if let Err(why) = msg.channel_id.say(&format!("The DM is {:?}.", name.name)) {
         println!("Error sending message {:?}", why);
     }
 });
