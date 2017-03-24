@@ -2,6 +2,7 @@
 extern crate serenity;
 extern crate typemap;
 extern crate rand;
+extern crate core;
 
 use serenity::client::Context;
 use serenity::Client;
@@ -13,6 +14,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::option;
+use std::num::ParseIntError;
+use core::str;
 use typemap::Key;
 
 struct GameName;
@@ -217,15 +220,37 @@ fn roll_dice(d: i64, times: i64) -> Vec<i64> {
     return rolls;
 }
 
+fn sti(number_str: &str) -> Result<i64, ParseIntError> {
+    match number_str.parse::<i64>() {
+        Ok(n) => Ok(n),
+        Err(err) => Err(err),
+    }
+}
 
+fn baka(msg: &Message) {
+    if let Err(why2) = msg.channel_id.say(&format!("You baka-ass motherfucker")) {
+        println!("Error sending message: {:?}", why2);
+    };
+}
 //----------------------------
 //---------COMMANDS-----------
 //----------------------------
 
 // rolls a <x> sided die <y> times.
-command!(roll(_ctx, msg, args, first: i64, second: String, third:i64) {
+command!(roll(_ctx, msg, args, first: String) {
+    let split = first.split("d");
+    let numbers = split.collect::<Vec<&str>>();
+    let number1 = match sti(numbers[1]) {
+        Ok(F) => F,
+        Err(why) => { baka(& msg); 0 }
 
-    let rolls = roll_dice(third, first);
+    };
+    let number2 = match sti(numbers[0]) {
+        Ok(F) => F,
+        Err(why) => { baka(& msg); 0 }
+
+    };
+    let rolls = roll_dice(number1, number2);
     if let Err(why) = msg.channel_id.say(&format!("Rolls: {:?}", rolls)) {
         println!("Error sending message: {:?}", why);
     }
