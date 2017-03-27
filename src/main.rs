@@ -67,7 +67,7 @@ fn wod(times: i64, msg: &Message) {
             _     => (),
         }
     }
-    if (tens > 0) {
+    if tens > 0 {
         msg.channel_id.say(&format!("Roll again!"));
         wod(tens, & msg);
     }
@@ -256,6 +256,37 @@ command!(roll(_ctx, msg, args, first: String) {
     }
 });
 
+command!(dmroll(_ctx, msg, args) {
+    let mut data = _ctx.data.lock().unwrap();
+    let dm_user = data.get_mut::<DM>().unwrap();
+    if dm_user.name == "" {
+        if let Err(why) = msg.channel_id.say(&format!("No Dungeon Master set.")) {
+            println!("Error sending message {:?}", why);
+        }
+    } else {
+        let split = args[0].split("d");
+        let numbers = split.collect::<Vec<&str>>();
+        let number1 = match sti(numbers[1]) {
+            Ok(F) => F,
+            Err(why) => { baka(& msg); 0 }
+
+        };
+        let number2 = match sti(numbers[0]) {
+            Ok(F) => F,
+            Err(why) => { baka(& msg); 0 }
+
+        };
+        let rolls = roll_dice(number1, number2);
+        if let Err(why) = msg.channel_id.say(&format!("Rolls: {:?}.  Also sent to DM.", rolls)) {
+            println!("Error sending message: {:?}", why);
+        }
+
+        dm_user.dm(&format!("Roll sent from {:?}", msg.author.name));
+        dm_user.dm(&format!("Rolls: {:?}", rolls));
+    }
+});
+
+
 // sets game name.  will be used to configure dice rules.
 command!(config(_ctx, msg, args) {
     let game_name = args.join(" ");
@@ -281,9 +312,9 @@ command!(playing(_ctx, msg, args) {
 command!(rollgame(_ctx, msg, args, first: i64) {
     let mut data = _ctx.data.lock().unwrap();
     let name = data.get_mut::<GameName>().unwrap();
-    if (name == "shadowrun") {
+    if name == "shadowrun" {
         shadowrun(first, msg);
-    } else if (name == "wod") {
+    } else if name == "wod" {
         wod(first, msg);
     } else {
         msg.channel_id.say(&format!("No game configured or invalid name"));
@@ -291,9 +322,6 @@ command!(rollgame(_ctx, msg, args, first: i64) {
 
 });
 
-command!(dmroll(_ctx, msg, args, first: i64, second: i64) {
-
-});
 
 command!(setdm(_ctx, msg, args) {
     let dm_user = match serenity::model::User::get(msg.author.id) {
