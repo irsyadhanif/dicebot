@@ -81,7 +81,25 @@ fn wod(times: i64, msg: &Message) {
     }
 }
 
+fn ore(times: i64, msg: &Message) {
+    let mut rolls = roll_dice(10, times);
+    let mut results = vec![0; 10];
+    let mut pairs = Vec::new();
+    msg.channel_id.say(&format!("Rolling for One-Roll Engine: {:?}", rolls));
+    for roll in rolls {
+        let itr = roll as usize;
+        results[itr - 1] += 1;
+    }
+    let mut y = 0;
+    for result in results {
+        y += 1;
+        if result == 0 { continue; }
+        if result == 1 { continue; }
+        pairs.push(format!("{}x{}", result, y));
+    }
 
+    msg.channel_id.say(&format!("Sets: {:?}", pairs));
+}
 //----------------------------
 //----------MAIN--------------
 //----------------------------
@@ -316,6 +334,8 @@ command!(rollgame(_ctx, msg, args, first: i64) {
         shadowrun(first, msg);
     } else if name == "wod" {
         wod(first, msg);
+    } else if name == "ore" {
+        ore(first, msg);
     } else {
         msg.channel_id.say(&format!("No game configured or invalid name"));
     }
