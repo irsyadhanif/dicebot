@@ -13,7 +13,6 @@ use rand::Rng;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::option;
 use std::num::ParseIntError;
 use core::str;
 use typemap::Key;
@@ -32,8 +31,10 @@ impl Key for DM {
 //---------GAMES-------------
 //---------------------------
 fn shadowrun(times: i64, msg: &Message) {
-    let mut rolls = roll_dice(6, times);
-    msg.channel_id.say(&format!("Rolling for Shadowrun: {:?}", rolls));
+    let rolls = roll_dice(6, times);
+    if let Err(why) = msg.channel_id.say(&format!("Rolling for Shadowrun: {:?}", rolls)) {
+        println!("Error sending message {:?}", why);
+    }
     let mut ones = 0;
     let mut hits = 0;
     for result in rolls {
@@ -54,8 +55,10 @@ fn shadowrun(times: i64, msg: &Message) {
 }
 
 fn wod(times: i64, msg: &Message) {
-    let mut rolls = roll_dice(10, times);
-    msg.channel_id.say(&format!("Rolling for World of Darkness: {:?}", rolls));
+    let rolls = roll_dice(10, times);
+    if let Err(why) = msg.channel_id.say(&format!("Rolling for World of Darkness: {:?}", rolls)) {
+        println!("Error sending message {:?}", why);
+    }
     let mut ones = 0;
     let mut hits = 0;
     let mut tens = 0;
@@ -68,7 +71,9 @@ fn wod(times: i64, msg: &Message) {
         }
     }
     if tens > 0 {
-        msg.channel_id.say(&format!("Roll again!"));
+        if let Err(why) = msg.channel_id.say(&format!("Roll again!")) {
+            println!("Error sending message {:?}", why);
+        }
         wod(tens, & msg);
     }
     //msg.channel_id.say(&format!("Ones: {}", ones));
@@ -82,10 +87,12 @@ fn wod(times: i64, msg: &Message) {
 }
 
 fn ore(times: i64, msg: &Message) {
-    let mut rolls = roll_dice(10, times);
+    let rolls = roll_dice(10, times);
     let mut results = vec![0; 10];
     let mut pairs = Vec::new();
-    msg.channel_id.say(&format!("Rolling for One-Roll Engine: {:?}", rolls));
+    if let Err(why) = msg.channel_id.say(&format!("Rolling for One-Roll Engine: {:?}", rolls)) {
+        println!("Error sending message {:?}", why);
+    }
     for roll in rolls {
         let itr = roll as usize;
         results[itr - 1] += 1;
@@ -98,7 +105,9 @@ fn ore(times: i64, msg: &Message) {
         pairs.push(format!("{}x{}", result, y));
     }
 
-    msg.channel_id.say(&format!("Sets: {:?}", pairs));
+    if let Err(why) = msg.channel_id.say(&format!("Sets: {:?}", pairs)) {
+        println!("Error sending message {:?}", why);
+    }
 }
 //----------------------------
 //----------MAIN--------------
@@ -259,12 +268,12 @@ command!(roll(_ctx, msg, args, first: String) {
     let split = first.split("d");
     let numbers = split.collect::<Vec<&str>>();
     let number1 = match sti(numbers[1]) {
-        Ok(F) => F,
+        Ok(f) => f,
         Err(why) => { baka(& msg); 0 }
 
     };
     let number2 = match sti(numbers[0]) {
-        Ok(F) => F,
+        Ok(f) => f,
         Err(why) => { baka(& msg); 0 }
 
     };
@@ -285,12 +294,12 @@ command!(dmroll(_ctx, msg, args) {
         let split = args[0].split("d");
         let numbers = split.collect::<Vec<&str>>();
         let number1 = match sti(numbers[1]) {
-            Ok(F) => F,
+            Ok(f) => f,
             Err(why) => { baka(& msg); 0 }
 
         };
         let number2 = match sti(numbers[0]) {
-            Ok(F) => F,
+            Ok(f) => f,
             Err(why) => { baka(& msg); 0 }
 
         };
@@ -299,8 +308,12 @@ command!(dmroll(_ctx, msg, args) {
             println!("Error sending message: {:?}", why);
         }
 
-        dm_user.dm(&format!("Roll sent from {:?}", msg.author.name));
-        dm_user.dm(&format!("Rolls: {:?}", rolls));
+        if let Err(why) = dm_user.dm(&format!("Roll sent from {:?}", msg.author.name)) {
+            println!("Error sending DM: {:?}", why);
+        }
+        if let Err(why) = dm_user.dm(&format!("Rolls: {:?}", rolls)) {
+            println!("Error sending DM: {:?}", why);
+        }
     }
 });
 
@@ -337,7 +350,9 @@ command!(rollgame(_ctx, msg, args, first: i64) {
     } else if name == "ore" {
         ore(first, msg);
     } else {
-        msg.channel_id.say(&format!("No game configured or invalid name"));
+        if let Err(why) = msg.channel_id.say(&format!("No game configured or invalid name")) {
+            println!("Error sending message: {:?}", why);
+        }
     }
 
 });
@@ -345,7 +360,7 @@ command!(rollgame(_ctx, msg, args, first: i64) {
 
 command!(setdm(_ctx, msg, args) {
     let dm_user = match serenity::model::User::get(msg.author.id) {
-        Ok(T) => T,
+        Ok(t) => t,
         Err(why) => panic!("Something happened: {:?}", why),
     };
     let mut data = _ctx.data.lock().unwrap();
