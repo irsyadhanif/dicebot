@@ -114,7 +114,7 @@ fn ore(times: i64, msg: &Message) {
 //----------------------------
 fn main() {
     // read private key from key.txt
-    let path = Path::new("src/key.txt");
+    let path = Path::new("key.txt");
 
     let mut file = match File::open(&path) {
         Err(e) => panic!("Couldn't open key file: {}", e),
